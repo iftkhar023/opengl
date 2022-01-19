@@ -24,7 +24,7 @@ typedef struct _raaNode
 	char m_acName[64];
 	float force[4];
 	float velocity[4];
-	float displacement[4];
+	float displacement[4] = { 0, 0, 0, 0 };
 } raaNode;
 
 typedef struct _raaArc
