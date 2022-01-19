@@ -1,0 +1,5 @@
+﻿  raaComputerGraphicsAssignment1.cpp
+E:\Final Year Computer Science\Computer Graphics\Assignment1-2021\Template\raaComputerGraphicsAssignment1\raaComputerGraphicsAssignment1.cpp(226,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Final Year Computer Science\Computer Graphics\Assignment1-2021\Template\raaComputerGraphicsAssignment1\raaComputerGraphicsAssignment1.cpp(227,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Final Year Computer Science\Computer Graphics\Assignment1-2021\Template\raaComputerGraphicsAssignment1\raaComputerGraphicsAssignment1.cpp(228,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  raaComputerGraphicsAssignment1.vcxproj -> E:\Final Year Computer Science\Computer Graphics\Assignment1-2021\Template\raaComputerGraphicsAssignment1\Debug\CG-2017AssignmentD.exe
