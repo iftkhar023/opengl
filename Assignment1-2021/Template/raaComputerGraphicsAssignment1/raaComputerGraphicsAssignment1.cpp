@@ -39,6 +39,11 @@ char g_acFile[256];
 //global var to toggle simulation
 bool simulation;
 
+static bool show_menu = false;
+static float menu_x = 50;
+static float menu_y = 50;
+
+
 // core functions -> reduce to just the ones needed by glut as pointers to functions to fulfill tasks
 void display(); // The rendering function. This is called once for each frame and you should put rendering code here
 void idle(); // The idle function is called at least once per frame and is where all simulation and operational code should be placed
@@ -68,40 +73,25 @@ void nodeDisplay(raaNode *pNode) // function to render a node (called from displ
 	glPushMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-	float afColGreen[] = { 0.0f, 1.0f, 0.0f, 1.0f };
-	float afColYellow[] = { 2.0f, 1.0f, 0.0f, 1.0f };
-	float afColBlue[] = { 0.0f, 1.0f, 1.0f, 1.0f };
-	float afColPink[] = { 2.0f, 0.0f, 2.0f, 1.0f };
-	float afColDarkBlue[] = { 0.0f, 0.0f, 2.0f, 2.0f };
-	float afColWhite[] = { 2.0f, 2.0f, 2.0f, 2.0f };
+	struct vec4
+	{
+		float x, y, z, w;
+	};
+
+	vec4 colors[] =
+	{
+		{ 0.0f, 1.0f, 0.0f, 1.0f },
+		{ 2.0f, 1.0f, 0.0f, 1.0f },
+		{ 0.0f, 1.0f, 1.0f, 1.0f },
+		{ 2.0f, 0.0f, 2.0f, 1.0f },
+		{ 0.0f, 0.0f, 2.0f, 2.0f },
+		{ 2.0f, 2.0f, 2.0f, 2.0f }
+	};
 
 	//if statement for different continent colours
-	if (pNode->m_uiContinent == 1)
-	{
-		utilitiesColourToMat(afColGreen, 2.0f);
-	}
-	else if (pNode->m_uiContinent == 2)
-	{
-		utilitiesColourToMat(afColYellow, 2.0f);
-	}
-	else if (pNode->m_uiContinent == 3)
-	{
-		utilitiesColourToMat(afColBlue, 2.0f);
-	}
-	else if (pNode->m_uiContinent == 4)
-	{
-		utilitiesColourToMat(afColPink, 2.0f);
-	}
-	else if (pNode->m_uiContinent == 5)
-	{
-		utilitiesColourToMat(afColDarkBlue, 2.0f);
-	}
-	else if (pNode->m_uiContinent == 6)
-	{
-		utilitiesColourToMat(afColWhite, 2.0f);
-	}
+	utilitiesColourToMat(&colors[pNode->m_uiContinent].x, 2.0f);
 
-	glTranslated(position[0], position[1], position[2]);
+	glTranslatef(position[0], position[1], position[2]);
 
 	//if statement to replace solid sphere line, if world system = 1,2... draw glut solid sphere, cone, cube etc
 	if (pNode->m_uiWorldSystem == 1)
@@ -151,6 +141,11 @@ void arcDisplay(raaArc *pArc) // function to render an arc (called from display(
 // draw the scene. Called once per frame and should only deal with scene drawing (not updating the simulator)
 void display() 
 {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT); // clear the rendering buffers
 
 	glLoadIdentity(); // clear the current transformation state
@@ -174,16 +169,62 @@ void display()
 	glutSolidSphere(5.0f, 10, 10);
 	glPopMatrix();
 
-	glFlush(); // ensure all the ogl instructions have been processed
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	if(show_menu)
+	{
+		float w = 200;
+		float h = 200;
+
+		glDisable(GL_DEPTH_TEST);
+		
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+
+		GLint viewport[4];
+		glGetIntegerv(GL_VIEWPORT, viewport);
+
+		glOrtho(0, viewport[2], 0, viewport[3], -1, 1);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		float afCol[] = { 1, 1, 1, 1 };
+		utilitiesColourToMat(afCol, 2.0f);
+
+		glTranslatef(menu_x, menu_y, 0);
+		glBegin(GL_TRIANGLE_STRIP);
+		glVertex2f(0, h);
+		glVertex2f(0, 0);
+		glVertex2f(w, h);
+		glVertex2f(w, 0);
+		glEnd();
+
+		glEnable(GL_DEPTH_TEST);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+	}
+
+	
+
+	// glFlush(); // ensure all the ogl instructions have been processed
 	glutSwapBuffers(); // present the rendered scene to the screen
 }
 
 // processing of system and camera data outside of the renderng loop
 void idle() 
 {
-	if (simulation == false)
+	if (simulation)
 	{
-		// visitNodes(&g_System, resetforces);
+		visitNodes(&g_System, resetforces);
 		visitArcs(&g_System, arcSimulation);
 		visitNodes(&g_System, nodeSimulation);
 	}
@@ -212,6 +253,11 @@ void nodeSimulation(raaNode* pNode)
 
 	//new positioning
 	resetforces(pNode);
+
+	pNode->m_afPosition[0] = pNode->m_afPosition[0] + pNode->displacement[0];
+	pNode->m_afPosition[1] = pNode->m_afPosition[1] + pNode->displacement[1];
+	pNode->m_afPosition[2] = pNode->m_afPosition[2] + pNode->displacement[2];
+
 	//pNode->m_afPosition[0] = pNode->m_afPosition[0] + pNode->displacement[0];
 	//pNode->m_afPosition[1] = pNode->m_afPosition[1] + pNode->displacement[1];
 	//pNode->m_afPosition[2] = pNode->m_afPosition[2] + pNode->displacement[2];
@@ -276,6 +322,7 @@ void resetforces(raaNode* pNode)
 	pNode->velocity[0] = 0;
 	pNode->velocity[1] = 0;
 	pNode->velocity[2] = 0;
+
 }
 
 // respond to a change in window position or shape
@@ -294,6 +341,12 @@ void reshape(int iWidth, int iHeight)
 // detect key presses and assign them to actions
 void keyboard(unsigned char c, int iXPos, int iYPos)
 {
+	if (c == '\t')
+	{
+		show_menu = !show_menu;
+	}
+	if (show_menu) return;
+
 	switch(c)
 	{
 	case 'w':
@@ -309,21 +362,17 @@ void keyboard(unsigned char c, int iXPos, int iYPos)
 		controlToggle(g_Control, csg_uiControlDrawGrid); // toggle the drawing of the grid
 		break;
 	case 'm': //toggles the simulation to be true or false
-		if (simulation == true)
-		{
-			simulation = false;
-		}
-		else
-		{
-			simulation = true;
-		}
+		simulation = !simulation;
 		break;
+
 	}
 }
 
 // detect standard key releases
 void keyboardUp(unsigned char c, int iXPos, int iYPos) 
 {
+	if (show_menu) return;
+
 	switch(c)
 	{
 		// end the camera zoom action
@@ -336,6 +385,8 @@ void keyboardUp(unsigned char c, int iXPos, int iYPos)
 
 void sKeyboard(int iC, int iXPos, int iYPos)
 {
+	if (show_menu) return;
+
 	// detect the pressing of arrow keys for ouse zoom and record the state for processing by the camera
 	switch(iC)
 	{
@@ -350,6 +401,8 @@ void sKeyboard(int iC, int iXPos, int iYPos)
 
 void sKeyboardUp(int iC, int iXPos, int iYPos)
 {
+	if (show_menu) return;
+
 	// detect when mouse zoom action (arrow keys) has ended
 	switch(iC)
 	{
@@ -362,6 +415,8 @@ void sKeyboardUp(int iC, int iXPos, int iYPos)
 
 void mouse(int iKey, int iEvent, int iXPos, int iYPos)
 {
+	if (show_menu) return;
+
 	// capture the mouse events for the camera motion and record in the current mouse input state
 	if (iKey == GLUT_LEFT_BUTTON)
 	{
@@ -377,6 +432,7 @@ void mouse(int iKey, int iEvent, int iXPos, int iYPos)
 
 void motion(int iXPos, int iYPos)
 {
+
 	// if mouse is in a mode that tracks motion pass this to the camera model
 	if(g_Input.m_bMouse || g_Input.m_bMousePan) camInputSetMouseLast(g_Input, iXPos, iYPos);
 }
